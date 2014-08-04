@@ -22,12 +22,16 @@ SRC_FILES = expsolver.cpp \
 	xmlparser.cpp \
 	utilstest.cpp
 
-# Default: Build all tests
-all: demo
 
-demo: $(SRC_FILES)
-	$(CC) $(CFLAGS) $(SRC_FILES) $(LFLAGS) -o utilstest
-	# Debug/demo
+OBJ_FILES := $(patsubst %.cpp,%.o,$(SRC_FILES))
+# Default: Build all tests
+all: utilstest
+
+ %.o : %.cpp
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
+
+utilstest: $(OBJ_FILES)
+	$(CC) $(CFLAGS) $(OBJ_FILES) $(LFLAGS) -o utilstest
 
 clean:
-	rm Debug/demo
+	rm $(OBJ_FILES)
