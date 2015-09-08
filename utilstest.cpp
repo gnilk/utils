@@ -3,6 +3,8 @@
 #include "thread.h"
 #include "urlparser.h"
 
+#include <math.h>
+
 using namespace gnilk;
 
 extern "C" {
@@ -51,11 +53,22 @@ static void testExpSolver() {
 	double tmp;
 	ExpSolver::Solve(&tmp, "-4+-1");
 	printf("Value: %f\n",tmp);
+	printf("boolean test\n");
+	ExpSolver::Solve(&tmp, "4>1");
+	printf("Bool: %f\n",tmp);
+	printf("IF Operator\n");
+	ExpSolver::Solve(&tmp, "4<1?4*2+1:3*2+1");
+	printf("if: %f\n",tmp);
+	ExpSolver::Solve(&tmp, "4<1?3*2+1");
+	printf("if: %f\n",tmp);
+	ExpSolver::Solve(&tmp, "4<1?");
+	printf("if: %f\n",tmp);
 }
 
 int main (int argc, char **argv) {
 	printf("hello world\n");
 
+	printf("%f\n", fmod(5.5,1.0));
 
 	testExpSolver();
 

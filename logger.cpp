@@ -42,6 +42,7 @@
  - 19.10.2010, FKling, Support for sink management
  - 02.04.2009, FKling, Support for sink levels
  - 23.03.2009, FKling, Implementation
+
  
  ---------------------------------------------------------------------------*/
 #ifdef WIN32

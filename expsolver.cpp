@@ -12,6 +12,8 @@ TODO: [ -:Not done, +:In progress, !:Completed]
 <pre>
  ! implement negative numbers 
  ! Multiple function arguments
+ - '?' plus comparative operators
+ + '>' and '<' in progress
 </pre>
 
 
@@ -153,12 +155,60 @@ double BinOpNode::Evaluate()
 }
 
 //
+// Boolean operation
+//
+BoolOpNode::BoolOpNode(const char *op, BaseNode *pLeft, BaseNode *pRight) :
+	BinOpNode(op, pLeft, pRight)
+{
+}
+
+BoolOpNode::~BoolOpNode()
+{
+}
+
+double BoolOpNode::Evaluate()
+{
+	//printf("BoolOpNode: %c\n",op[0]);
+	switch(op[0])
+	{
+	case '>' : return pLeft->Evaluate() > (int)pRight->Evaluate();
+	case '<' : return pLeft->Evaluate() < (int)pRight->Evaluate();
+	// not sure about this...
+	case '=' : return (int)pLeft->Evaluate() == (int)pRight->Evaluate();
+	case '!' : return (int)pLeft->Evaluate() != (int)pRight->Evaluate();
+	}
+	printf("[!] Illegal operator: %s\n",op);
+	return 0.0;
+}
+IfOperatorNode::IfOperatorNode(BaseNode *exp, BaseNode *pTrue, BaseNode *pFalse) 
+{
+	this->exp = exp;
+	this->pTrue = pTrue;
+	this->pFalse = pFalse;
+}
+IfOperatorNode::~IfOperatorNode() 
+{
+	delete exp;
+	delete pTrue;
+	delete pFalse;
+}
+double IfOperatorNode::Evaluate() 
+{
+//	printf("IfOperatorNode, evaluate\n");
+	double res = exp->Evaluate();
+	if (res > 0) {
+		return pTrue->Evaluate();
+	}
+	return pFalse->Evaluate();
+}
+
+//
 // constructor
 //
 ExpSolver::ExpSolver(const char *expression)
 {
 	//this->expression = strdup(expression);
-	tokenizer = new Tokenizer(expression,"*/+-(),");
+	tokenizer = new Tokenizer(expression,"*/+-(),<>?:");
 	pVariableCallback = NULL;
 	pFuncCallback = NULL;
 	tree = NULL;
@@ -281,7 +331,7 @@ BaseNode *ExpSolver::BuildUserCall()
 			exp = new ConstUserNode(pVariableCallback, pVariableContext, token);
 		} else
 		{
-			printf("[!] Error: No variable callback defined\n");
+			printf("[!] Error: No variable callback defined, token=%s\n", token);
 		}
 	}
 	return exp;
@@ -293,6 +343,7 @@ BaseNode *ExpSolver::BuildUserCall()
 BaseNode *ExpSolver::BuildFact()
 {
 	BaseNode *exp = NULL;
+	if (!tokenizer->HasMore()) return NULL;
 	kTokenClass tc = kTokenClass_Unknown;
 	const char *token = tokenizer->Peek();
 	// classify next 
@@ -322,6 +373,7 @@ BaseNode *ExpSolver::BuildFact()
 			{
 				bool negative = false;
 				token = tokenizer->Next();
+				//printf("Numeric, next: %s\n", token);
 				// Ugly - but I want to avoid string concat
 				// will not handle multiple '--'
 				if (token[0] == '-') {
@@ -331,6 +383,7 @@ BaseNode *ExpSolver::BuildFact()
 
 				}
 				exp = new ConstNode(token, negative);
+
 			}
 			break;
 		case kTokenClass_Variable :
@@ -359,6 +412,7 @@ BaseNode *ExpSolver::BuildTerm()
 		//while(Tokenizer::Case(token,"* /") >= 0)
 		while((token != NULL) && ((token[0]=='*') || (token[0]=='/')))
 		{
+			//printf("term\n");
 			token = tokenizer->Next();
 			BaseNode *next = BuildFact();
 			exp = new BinOpNode(token, exp, next);
@@ -372,7 +426,7 @@ BaseNode *ExpSolver::BuildTerm()
 // internal, builds the expression tree
 // handles low priority operators - also called internally
 //
-BaseNode *ExpSolver::BuildTree()
+BaseNode *ExpSolver::BuildBase()
 {
 	BaseNode *exp;
 	exp = BuildTerm();
@@ -389,7 +443,71 @@ BaseNode *ExpSolver::BuildTree()
 	}
 	return exp;
 }
+BaseNode *ExpSolver::BuildBool() 
+{
+	BaseNode *exp;
+	exp = BuildBase();
+	if (tokenizer->HasMore())
+	{
+		const char *token = tokenizer->Peek();
+		//printf("BuildBool, token=%s",token);
+		while ((token != NULL) && ((token[0]=='>') || (token[0]=='<')))
+		{
+			token = tokenizer->Next();
+			//printf("BuildBool, Next as BuildBase\n");
+			BaseNode *nextBase = BuildBase();
+			exp = new BoolOpNode(token, exp, nextBase);
+			token = tokenizer->Peek();
+			//printf("BuildBool, done, next token=%s\n",token);
+		}
+	}  else {
+		//printf("BuildBool, no more data\n");
+	}
+	return exp;
+}
 
+BaseNode *ExpSolver::BuildIf() 
+{
+	BaseNode *exp;
+	exp = BuildBool();
+	if (tokenizer->HasMore())
+	{
+		const char *token = tokenizer->Peek();
+		//printf("BuildIf, HasMore, token=%s\n",token);
+		while ((token != NULL) && (token[0]=='?'))
+		{
+			token = tokenizer->Next();
+			//printf("BuildIf, build true\n");
+			BaseNode *pTrue = BuildTree();
+			if (pTrue == NULL) {
+				printf("[!] Error: Operator mismatch, use <exp>?<true>:<false>\n");
+				return NULL;
+			}
+
+			token = tokenizer->Peek();
+			if ((token == NULL) || (token[0] != ':')) {
+				printf("[!] Error: token error, expected ':' got '%s'\n",token);
+				return NULL;
+			}
+			token = tokenizer->Next();
+			BaseNode *pFalse = BuildTree();
+			exp = new IfOperatorNode(exp, pTrue, pFalse);
+
+			token = tokenizer->Peek();
+		}
+	} else {
+		//printf("BuildIf, no more data\n");
+	}
+	//printf("BuildIf, done, exp=%p\n", exp);
+	return exp;
+}
+
+BaseNode *ExpSolver::BuildTree()
+{
+	return BuildIf();
+}
+
+// boolean stuff here
 //
 // Prepare the expression = build the expression tree
 //
