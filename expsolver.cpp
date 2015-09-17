@@ -247,7 +247,7 @@ void ExpSolver::RegisterUserVariableCallback(PFNEVALUATE pFunc, void *pUser)
 void ExpSolver::RegisterUserFunctionCallback(PFNEVALUATEFUNC pFunc, void *pUser)
 {
 	pFuncCallback = pFunc;
-	pVariableContext = pUser;
+	pFunctionContext = pUser;
 }
 
 //
