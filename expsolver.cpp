@@ -35,6 +35,8 @@ TODO: [ -:Not done, +:In progress, !:Completed]
 #include "tokenizer.h"
 #include "expsolver.h"
 
+#include <vector>
+
 using namespace gnilk;
 
 BaseNode::~BaseNode()
@@ -311,6 +313,7 @@ BaseNode *ExpSolver::BuildUserCall()
 
 		if (next[0] == ')')
 		{
+			//printf("apa )\n");
 			tokenizer->Next();
 			if (pFuncCallback != NULL)
 			{
@@ -504,7 +507,8 @@ BaseNode *ExpSolver::BuildIf()
 
 BaseNode *ExpSolver::BuildTree()
 {
-	return BuildIf();
+	BaseNode *exp = BuildIf();
+	return exp;
 }
 
 // boolean stuff here
@@ -518,8 +522,16 @@ bool ExpSolver::Prepare()
 		delete tree;
 		tree = NULL;
 	}
-	//argcounter = 0;
-	tree = BuildTree();
+	// This allows for multi-expression and is the basis for a proper interpreter
+	while(tokenizer->HasMore()) {
+		BaseNode *exp = BuildTree();
+		//printf("Next: %s\n", tokenizer->Peek());
+		nodes.push_back(exp);
+	}
+
+	// backwards compatible
+	tree = nodes[0];
+
 	return true;
 }
 
@@ -529,6 +541,7 @@ bool ExpSolver::Prepare()
 double ExpSolver::Evaluate()
 {
 	double result = 0.0;
+	//printf("Nodes: %d\n", nodes.size());
 	if (tree != NULL)
 	{
 		result = tree->Evaluate();

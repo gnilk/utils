@@ -130,6 +130,8 @@ namespace gnilk
 		} kTokenClass;
 		kTokenClass ClassifyFactor(const char *token);
 
+		std::vector<BaseNode *> nodes;
+
 
 	public:
 		ExpSolver(const char *expression);
