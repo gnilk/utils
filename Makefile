@@ -3,8 +3,8 @@
 
 # Compiler settings
 CC     = g++
-CFLAGS = -g -arch x86_64 
-CFLAGS +=  -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk
+CFLAGS = -g -arch x86_64 -std=c++11
+CFLAGS +=  -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk
 CFLAGS += -I/opt/local/include -I.
 
 # Linker settings

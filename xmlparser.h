@@ -22,6 +22,7 @@ TODO: [ -:Not done, +:In progress, !:Completed]
 #include <string>
 #include <list>
 #include <stack>
+#include <functional>
 
 namespace gnilk {
   namespace xml {
@@ -116,12 +117,19 @@ namespace gnilk {
 
       virtual std::list<IAttribute *> &getAttributes() = 0;
       virtual std::list<ITag *> &getChildren() = 0;
+      virtual ITag *getFirstChild(std::string name) = 0;
+      virtual ITag *getChildWithAttributeValue(std::string name, std::string attribute, std::string value) = 0;
     };
+
+    typedef std::function<void(ITag *tag, std::list<IAttribute *>&attributes)> OnTagDelegate;
 
     class IDocument {
     public:
       virtual ITag *getRoot() = 0;
+      virtual void traverse(OnTagDelegate tagHandler) = 0;
     };
+
+
 
 
     class IParseEvents
@@ -178,6 +186,8 @@ namespace gnilk {
 
       virtual std::list<IAttribute *> &getAttributes() { return attributes; }
       virtual std::list<ITag *> &getChildren() { return children; }
+      virtual ITag *getFirstChild(std::string name);
+      virtual ITag *getChildWithAttributeValue(std::string name, std::string attribute, std::string value);
     };
 
 
@@ -192,11 +202,14 @@ namespace gnilk {
 
       //public std::string &getData() { return data; };
       virtual ITag *getRoot() { return root; };
+      virtual void traverse(OnTagDelegate tagHandler);
       void setRoot(Tag *pRoot) { root = pRoot; }
       void dumpTagTree(ITag *root, int depth);
 
 
     private:
+      OnTagDelegate tagHandler;
+      void traverseNodes(OnTagDelegate tagHandler, std::list<ITag *> &tags);
       std::string indentString(int depth);
     };
 

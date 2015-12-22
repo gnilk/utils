@@ -83,6 +83,8 @@ int Parser::peekNextChar() {
 }
 
 void Parser::changeState(kParseState newState) {
+
+  //printf("changeState: %d -> %d\n",state, newState);
   oldState = state;
   state = newState;
   enterNewState();
@@ -279,6 +281,7 @@ void Parser::parseData() {
         attrValue = token;
         tagCurrent->addAttribute(attrName, attrValue);
         changeState(psTagAttributeName);
+        token = "";         
       } else {
         token +=c;
       }
@@ -311,6 +314,7 @@ void Tag::addAttribute(std::string _name, std::string _value) {
   Attribute *attr = new Attribute();
   attr->setName(_name);
   attr->setValue(_value);
+  //printf("AddAttr: '%s' : '%s'\n",_name.c_str(), _value.c_str());
   attributes.push_back(attr);
 }
 
@@ -332,7 +336,7 @@ bool Tag::hasAttribute(std::string name) {
   std::list<IAttribute *>::iterator it = attributes.begin();
   for(;it != attributes.end();it++) {
     IAttribute *pAttribute = *it;
-    if (pAttribute->getName() == name) return true;
+    if (!strcmp(pAttribute->getName().c_str(), name.c_str())) return true;
   }
   return false;
 }
@@ -341,11 +345,38 @@ std::string Tag::getAttributeValue(std::string name, std::string defValue) {
   std::list<IAttribute *>::iterator it = attributes.begin();
   for(;it != attributes.end();it++) {
     IAttribute *pAttribute = *it;
-    if (pAttribute->getName() == name) return pAttribute->getValue();
+    //printf("attr: %s\n",pAttribute->getName().c_str());
+    if (!strcmp(pAttribute->getName().c_str(), name.c_str())) return pAttribute->getValue();
   }
   return defValue;
 }
 
+ITag *Tag::getFirstChild(std::string name) {
+  std::list<ITag *>::iterator it = children.begin();
+  for(;it != children.end(); it++) {
+    ITag *child = *it;
+    if (!strcmp(child->getName().c_str(), name.c_str())) return child;
+  }
+  return NULL;
+}
+
+ITag *Tag::getChildWithAttributeValue(std::string name, std::string attribute, std::string value) {
+  std::list<ITag *>::iterator it = children.begin();
+  for(;it != children.end(); it++) {
+    ITag *child = *it;
+ 
+    if (!strcmp(child->getName().c_str(), name.c_str())) {
+
+      if (child->hasAttribute(attribute)) {
+        std::string chval = child->getAttributeValue(attribute,"");
+        if (!strcmp(chval.c_str(), value.c_str())) {
+          return child;
+        }
+      }
+    }
+  }
+  return NULL;
+}
 
 // -- Document container
 Document::Document() {
@@ -354,6 +385,20 @@ Document::Document() {
 
 Document::~Document() {
 
+}
+
+void Document::traverse(OnTagDelegate tagHandler) {
+  traverseNodes(tagHandler, root->getChildren());
+}
+
+void Document::traverseNodes(OnTagDelegate tagHandler, std::list<ITag *> &tags) {
+  std::list<ITag *>::iterator it = tags.begin();
+  while(it != tags.end()) {
+    ITag *tag = *it;
+    tagHandler(tag, tag->getAttributes());
+    traverseNodes(tagHandler, tag->getChildren());
+    it++;
+  }
 }
 
 std::string Document::indentString(int depth) {
@@ -597,6 +642,7 @@ void ParseStateFunc::stateAttributeValue(char c) {
     attrValue = token;
     tagCurrent->addAttribute(attrName, attrValue);
     changeState(psTagAttributeName);
+    token="";
   } else {
     token +=c;
   }
@@ -802,11 +848,12 @@ void StateCommentConsume::consume(char c) {
 
 void StateAttributeName::enter() {
   token = "";
+//  printf("StateAttributeName::enter, token='%s'\n",token.c_str());
 }
 
 void StateAttributeName::consume(char c) {
   if (isspace(c)) return;
-  if ((c == '=') && (peekNextChar() == '"')) {
+  if ((c == '=') && (peekNextChar() == '\"')) {
     nextChar(); // consume "
     pContext->attrName = token;
     token = "";
@@ -839,11 +886,14 @@ void StateAttributeName::consume(char c) {
 
 void StateAttributeValue::enter() {
   token = "";
+//  printf("StateAttributeValue::enter, token='%s'\n",token.c_str());
+
 }
 
 void StateAttributeValue::consume(char c) {
   if (c=='"') {
     pContext->attrValue = token;
+//    printf("AddAttribute, %s\n", pContext->attrName.c_str());
     pContext->tagCurrent->addAttribute(pContext->attrName, pContext->attrValue);
     changeState(psTagAttributeName);
   } else {
