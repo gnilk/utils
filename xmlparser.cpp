@@ -19,6 +19,8 @@ TODO: [ -:Not done, +:In progress, !:Completed]
 </pre>
 
 \History
+- 03.03.2016, FKling, Addded DOCTYPE to all other calling convention use cases
+- 01.03.2016, FKling, Fixed DOCTYPE tag when using DTD's
 - 10.03.2012, FKling, Implementation in Java, converted to C++ not long after
 
 ---------------------------------------------------------------------------*/
@@ -181,10 +183,12 @@ void Parser::parseData() {
       if ((c == '-') && (peekNextChar()=='-')) {
         nextChar();
         changeState(psCommentConsume);
+      } else if ((c == 'D') && (peekNextChar()=='O')) {
+        changeState(psDocType);
       } else {
-#ifdef _DEBUG
+//#ifdef _DEBUG
         printf("Warning: Illegal start of tag, expected start of comment ('<!--') but found found '<!-'\n");
-#endif
+//#endif
         // TODO: If strict, abort here!
         rewind();   // rewind '-'
         rewind();   // rewind '!'
@@ -296,6 +300,12 @@ void Parser::parseData() {
         token += c;
       }
       break;
+    case psDocType:
+      if (c == '>') {
+          token = "";
+          changeState(psConsume);
+      }
+      break;
     } // switch
   } // while (!eof)
 } // parseData
@@ -304,6 +314,7 @@ void Parser::parseData() {
 Tag::Tag(std::string _name) {
   setName(_name);
   content.clear();
+  parent = NULL;
 }
 
 Tag::~Tag() {
@@ -320,6 +331,15 @@ void Tag::addAttribute(std::string _name, std::string _value) {
 
 void Tag::addChild(Tag *tag) {
   getChildren().push_back(tag);
+  tag->setParent(this);
+}
+
+void Tag::setParent(Tag *tag) {
+  parent = tag;
+}
+
+ITag *Tag::getParent() {
+  return parent;
 }
 
 
@@ -387,16 +407,22 @@ Document::~Document() {
 
 }
 
-void Document::traverse(OnTagDelegate tagHandler) {
-  traverseNodes(tagHandler, root->getChildren());
+void Document::traverse(OnTagDelegate startHandler, OnTagDelegate endHandler) {
+  traverseNodes(startHandler, endHandler, root->getChildren());
 }
 
-void Document::traverseNodes(OnTagDelegate tagHandler, std::list<ITag *> &tags) {
+void Document::traverseFromNode(ITag *node, OnTagDelegate startHandler, OnTagDelegate endHandler) {
+  traverseNodes(startHandler, endHandler, node->getChildren());
+}
+
+
+void Document::traverseNodes(OnTagDelegate startHandler, OnTagDelegate endHandler, std::list<ITag *> &tags) {
   std::list<ITag *>::iterator it = tags.begin();
   while(it != tags.end()) {
     ITag *tag = *it;
-    tagHandler(tag, tag->getAttributes());
-    traverseNodes(tagHandler, tag->getChildren());
+    startHandler(tag, tag->getAttributes());
+    traverseNodes(startHandler, endHandler, tag->getChildren());
+    endHandler(tag, tag->getAttributes());
     it++;
   }
 }
@@ -422,6 +448,38 @@ void Document::dumpTagTree(ITag *root, int depth) {
   }		
 }
 
+
+DocPath::DocPath() {
+  pathSeparator = DOCPATH_DEFAULT_SEPARATOR;
+}
+
+DocPath::DocPath(std::string separator) {
+  pathSeparator = separator;
+}
+
+ITag *DocPath::findFirst(Document *doc, std::string tag, std::string value) {
+  searchTag = tag;
+  searchValue = value;
+  findResult = NULL;
+
+  doc->traverse(
+    std::bind(&DocPath::onDefinitionTagDataStart,this, std::placeholders::_1, std::placeholders::_2),
+    std::bind(&DocPath::onDefinitionTagDataEnd,this, std::placeholders::_1, std::placeholders::_2));
+  return findResult;
+}
+
+// call back from XML Parser
+void DocPath::onDefinitionTagDataStart(ITag *tag, std::list<IAttribute *>&attributes) {
+  if (findResult != NULL) return;
+  if (tag->getName() != searchTag) return;
+  if (tag->getContent() != searchValue) return;
+
+  printf("assign find result, %s:%s\n",tag->getName().c_str(), tag->getContent().c_str());
+  findResult = tag;
+}
+
+void DocPath::onDefinitionTagDataEnd(ITag *tag, std::list<IAttribute *>&attributes) {
+}
 
 
 
@@ -599,9 +657,15 @@ void ParseStateFunc::stateCommentConsume(char c) {
       nextChar();
       changeState(psConsume);
     }
+  } else if ((c == 'D') && (peekNextChar()=='O')) {
+    changeState(psDocType);
   } else if (c=='-') {
     token="-";  // Store this in order to track -->
   }
+
+  // } else if (c=='-') {
+  //   token="-";  // Store this in order to track -->
+  // }
 }
 
 void ParseStateFunc::stateAttributeName(char c) {
@@ -659,6 +723,13 @@ void ParseStateFunc::stateTagContent(char c) {
   }
 }
 
+void ParseStateFunc::stateDTDDocTypeContent(char c) {
+  if (c == '>') {
+    token = "";
+    changeState(psConsume);
+  }
+}
+
 void ParseStateFunc::parseData() {
   char c;
   tagStack.push(root);
@@ -691,6 +762,9 @@ void ParseStateFunc::parseData() {
       break;
     case psTagContent:
       stateTagContent(c);
+      break;
+    case psDocType:
+      stateDTDDocTypeContent(c);
       break;
     }
   }
@@ -841,6 +915,8 @@ void StateCommentConsume::consume(char c) {
       nextChar();
       changeState(psConsume);
     }
+  } else if ((c == 'D') && (peekNextChar()=='O')) {
+    changeState(psDocType);
   } else if (c=='-') {
     token="-";  // Store this in order to track -->
   }
@@ -916,6 +992,17 @@ void StateTagContent::consume(char c) {
   }
 }
 
+void StateTagDTDDocType::enter() {
+  token = "";
+}
+
+void StateTagDTDDocType::consume(char c) {
+  if (c == '>') {
+    token = "";
+    changeState(psConsume);
+  }
+}
+
 ParseStateClasses::ParseStateClasses(std::string _data, IParseEvents *pEventHandler)
 {
   stateConsume.pContext = this;
@@ -928,6 +1015,7 @@ ParseStateClasses::ParseStateClasses(std::string _data, IParseEvents *pEventHand
   stateAttributeName.pContext = this;
   stateAttributeValue.pContext = this;
   stateTagContent.pContext = this;
+  stateTagDTDDocType.pContext = this;
   pState = dynamic_cast<IParseState *>(&stateConsume);
 
   initialize(_data, pEventHandler);
@@ -945,6 +1033,7 @@ void ParseStateClasses::changeState(kParseState newState) {
     case psTagAttributeName   : pState = dynamic_cast<IParseState *>(&stateAttributeName); break;
     case psTagAttributeValue  : pState = dynamic_cast<IParseState *>(&stateAttributeValue); break;
     case psTagContent         : pState = dynamic_cast<IParseState *>(&stateTagContent); break;
+    case psDocType            : pState = dynamic_cast<IParseState *>(&stateTagDTDDocType); break;
     default : pState = NULL;
   }
   // State tracking variable managed by base class
