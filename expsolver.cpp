@@ -39,6 +39,37 @@ TODO: [ -:Not done, +:In progress, !:Completed]
 
 using namespace gnilk;
 
+static unsigned long long hex2dec_c(const char *s)
+{
+    unsigned long long n=0;
+    int length = strlen(s);
+    for(int i=0; i<length && s[i]!='\0'; i++)
+    {
+        int v = 0;
+        if      ('a' <= s[i] && s[i] <='f') { v=s[i]-97+10; }
+        else if ('A' <= s[i] && s[i] <='F') { v=s[i]-65+10; }
+        else if ('0' <= s[i] && s[i] <='9') { v=s[i]-48;    }
+        else break;
+        n*=16;
+        n+=v;
+    }
+    return n;
+}
+
+static unsigned long bin2dec(const char* binary)
+{
+    int len,i,exp;
+    unsigned long dec=0;
+
+    len = strlen(binary);
+    exp = len-1;
+
+    for(i=0;i<len;i++,exp--)
+        dec += binary[i]=='1'?pow(2,exp):0;
+    return dec;
+}
+
+
 BaseNode::~BaseNode()
 {
 	// nothing
@@ -46,7 +77,16 @@ BaseNode::~BaseNode()
 
 ConstNode::ConstNode(const char *input, bool negative)
 {
-	numeric = atof(input);
+	if ((input[0]=='$')||(input[0]=='x')) {
+		// HEX input
+		numeric = (float)hex2dec_c(&input[1]);
+	} else if (input[0]=='%') {	
+		// Binary input
+		numeric = (float)bin2dec(&input[1]);
+	} else {
+		// Decimale input
+		numeric = atof(input);
+	}
 	if (negative) {
 		numeric *= -1;
 	}
@@ -255,7 +295,7 @@ void ExpSolver::RegisterUserFunctionCallback(PFNEVALUATEFUNC pFunc, void *pUser)
 //
 static bool IsNumeric(char c)
 {
-	static char *num="-0123456789";
+	static char *num="-0123456789%$x";
 	if (!strchr(num,c)) return false;
 	return true;
 }
@@ -267,7 +307,7 @@ ExpSolver::kTokenClass ExpSolver::ClassifyFactor(const char *token)
 {
 	kTokenClass result = kTokenClass_Unknown;
 	if (IsNumeric(token[0]))
-	{
+	{	
 		result = kTokenClass_Numeric;	
 	} else
 	{
@@ -313,7 +353,6 @@ BaseNode *ExpSolver::BuildUserCall()
 
 		if (next[0] == ')')
 		{
-			//printf("apa )\n");
 			tokenizer->Next();
 			if (pFuncCallback != NULL)
 			{
