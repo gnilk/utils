@@ -1,2 +1,4 @@
 
 *.o
+*.sublime-project
+*.sublime-workspace
