@@ -121,7 +121,10 @@ static const char * xmldef = \
 
 
 using namespace gnilk::xml;
-void xmlTagHandler(ITag *tag, std::list<IAttribute *> &attributes) {
+void xmlTagStartHandler(ITag *tag, std::list<IAttribute *> &attributes) {
+	printf("%s - %s\n",tag->getName().c_str(), tag->getAttributeValue("name","").c_str());
+}
+void xmlTagEndHandler(ITag *tag, std::list<IAttribute *> &attributes) {
 	printf("%s - %s\n",tag->getName().c_str(), tag->getAttributeValue("name","").c_str());
 }
 
@@ -147,7 +150,8 @@ void testXMLParser() {
 		}
 	}
 	printf("Test XML Doc traversal\n");
-	doc->traverse(std::bind(xmlTagHandler, std::placeholders::_1, std::placeholders::_2));
+	doc->traverse(std::bind(xmlTagStartHandler, std::placeholders::_1, std::placeholders::_2),
+				  std::bind(xmlTagEndHandler, std::placeholders::_1, std::placeholders::_2));
 }
 
 int main (int argc, char **argv) {
@@ -155,8 +159,8 @@ int main (int argc, char **argv) {
 
 	//printf("%f\n", fmod(5.5,1.0));
 
-	//testExpSolver();
 	testXMLParser();
+	testExpSolver();
 
 	// TODO: put test code here!
 	return 0;
