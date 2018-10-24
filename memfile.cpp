@@ -46,7 +46,17 @@ public:
 	kMFError Open(kMFOpen flags = kMFOpen_RW);
 	kMFError Close();
 
-	int32_t Write(const uint8_t *data, int32_t numbytes);
+
+	__inline int32_t Write(const float value) { return(Write(&value, sizeof(float))); }
+	__inline int32_t Write(const double value) { return(Write(&value, sizeof(double))); }
+	__inline int32_t Write(const int8_t value) { return(Write(&value, sizeof(int8_t))); }
+	__inline int32_t Write(const uint8_t value) { return(Write(&value, sizeof(uint8_t))); }
+	__inline int32_t Write(const int16_t value) { return(Write(&value, sizeof(int16_t))); }
+	__inline int32_t Write(const uint16_t value) { return(Write(&value, sizeof(uint16_t))); }
+	__inline int32_t Write(const int32_t value) { return(Write(&value, sizeof(int32_t))); }
+	__inline int32_t Write(const uint32_t value) { return(Write(&value, sizeof(uint32_t))); }
+
+	int32_t Write(const void *data, int32_t numbytes);
 	int32_t Read(uint8_t *dst, int32_t numbytes);
 
 	uint8_t *Buffer();
@@ -111,7 +121,7 @@ kMFError Memfile::Close() {
 //
 // Write numbytes to the memfile from data, extend memfile buffers as needed
 //
-int32_t Memfile::Write(const uint8_t *data, int32_t numbytes) {
+int32_t Memfile::Write(const void *data, int32_t numbytes) {
 	if (buffer == NULL) {
 		return kMFErr_NotOpen;
 	}
