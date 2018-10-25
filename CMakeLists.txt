@@ -22,7 +22,7 @@ include_directories("${PROJECT_SOURCE_DIR}")
 # Utility library
 #
 
-# graphics core 
+# core 
 list(APPEND srcutils curve.cpp)
 list(APPEND srcutils event.cpp)
 list(APPEND srcutils expsolver.cpp)
@@ -34,6 +34,9 @@ list(APPEND srcutils tokenizer.cpp)
 list(APPEND srcutils urlparser.cpp)
 list(APPEND srcutils xmlparser.cpp)
 list(APPEND srcutils memfile.cpp)
+
+# tests
+list(APPEND srcutils tests/test_memfile.cpp) 
 
 
 add_library(gnilkutil SHARED ${srcutils})
