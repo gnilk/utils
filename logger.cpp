@@ -36,6 +36,7 @@
  
  \History
  - 25.10.2018, FKling, Fixed C++11 warnings
+ - 18.10.2018, FKling, Added flags for an instance allowing fine grained control (see: kFlags)
  - 18.10.2018, FKling, LoggerInstance in map, added 'Fatal' as level
  - 25.10.2010, FKling, Property handling and from-file-initialization
  - 25.10.2010, FKling, Simple rolling file appender
