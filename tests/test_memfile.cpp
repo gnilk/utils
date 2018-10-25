@@ -302,7 +302,7 @@ public:
             ss << quote << name << quote << separator << std::to_string(value);
         }
         ss  << gnilk::Memfile::eol << gnilk::Memfile::eos;
-		
+
         return std::string((char *)ss.Buffer());
     }
 };
@@ -313,10 +313,6 @@ typedef struct {
 } SensorVersionHeader;
 
 int test_memfile_jsonwrite(ITesting *t) {
-
-
-	
-
     SensorVersionHeader version {.Major = 1, .Minor = 0};
 
     std::string json = "";
