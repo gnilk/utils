@@ -42,6 +42,10 @@ Memfile::Memfile() {
 	rptr = 0;
 	length = 0;
 }
+
+//
+// Destroy the object
+//
 Memfile::~Memfile() {
 	if (buffer != NULL) {
 		free(buffer);
@@ -122,6 +126,9 @@ int32_t Memfile::Read(void *dst, int32_t numbytes) {
 	return numbytes;
 }
 
+//
+// ReadString reads a bunch of char's and stops on anything below ' '
+//
 int32_t Memfile::ReadString(char *dst, int32_t maxbytes) {
 	int32_t i = 0;
 	char v;
@@ -137,7 +144,8 @@ int32_t Memfile::ReadString(char *dst, int32_t maxbytes) {
 		if (res < 0) {
 			return res;
 		}
-		if ((v=='\0') || (v=='\n')) {
+		// Stop on any non-ascii below 32
+		if (v < 32) {
 			break;
 		}
 		dst[i++] = v;
