@@ -37,6 +37,8 @@ list(APPEND srcutils memfile.cpp)
 
 # tests
 list(APPEND srcutils tests/test_memfile.cpp) 
+list(APPEND srcutils tests/test_expsolver.cpp) 
+list(APPEND srcutils tests/test_xmlparser.cpp) 
 
 
 add_library(gnilkutil SHARED ${srcutils})

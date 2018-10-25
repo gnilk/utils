@@ -567,13 +567,14 @@ bool ExpSolver::Prepare()
 	// This allows for multi-expression and is the basis for a proper interpreter
 	while(tokenizer->HasMore()) {
 		BaseNode *exp = BuildTree();
-		//printf("Next: %s\n", tokenizer->Peek());
+		// However, let's fail if there is some kind of error
+		if (exp == NULL) {
+			return false;
+		}
 		nodes.push_back(exp);
 	}
-
-	// backwards compatible
-	tree = nodes[0];
-
+	// Store tree for first node..
+	tree = nodes[0];	
 	return true;
 }
 

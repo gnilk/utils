@@ -93,11 +93,13 @@ static void testExpSolver() {
 	printf("Bool: %f\n",tmp);
 	printf("IF Operator\n");
 	ExpSolver::Solve(&tmp, "4<1?4*2+1:3*2+1");
-	printf("if: %f\n",tmp);
-	ExpSolver::Solve(&tmp, "4<1?3*2+1");
-	printf("if: %f\n",tmp);
-	ExpSolver::Solve(&tmp, "4<1?");
-	printf("if: %f\n",tmp);
+	printf("if: %f (7)\n",tmp);
+	if (!ExpSolver::Solve(&tmp, "4<1?3*2+1")) {
+		printf("Ok, should not work\n");
+	}
+	if (!ExpSolver::Solve(&tmp, "4<1?")) {
+		printf("Ok, should not work\n");
+	}
 }
 
 // --  
