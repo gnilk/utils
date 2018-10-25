@@ -25,6 +25,14 @@ TODO: [ -:Not done, +:In progress, !:Completed]
 
 using namespace gnilk;
 
+// This can be platform specific
+// macosx '\n' = 0x0a
+// windows '\n' = 0x0d, 0x0a
+// linux   '\n' = 
+const uint8_t Memfile::eol = (uint8_t)'\n'; // end-of-line since '\n' converts to an integer
+const uint8_t Memfile::eos = (uint8_t)'\n'; // end-of-string since '\0' converts to an integer
+
+
 Memfile::Memfile() {
 	buffer = NULL;
 	blocksize = MF_DEFAULT_BLOCKSZ;
@@ -96,7 +104,7 @@ int32_t Memfile::Write(const void *data, int32_t numbytes) {
 //
 // Read copies numbytes to destination and returns actually number of bytes copied
 //
-int32_t Memfile::Read(uint8_t *dst, int32_t numbytes) {
+int32_t Memfile::Read(void *dst, int32_t numbytes) {
 	if (buffer == NULL) {
 		return kMFErr_NotOpen;
 	}
@@ -109,9 +117,33 @@ int32_t Memfile::Read(uint8_t *dst, int32_t numbytes) {
 	}
 
 	memcpy(dst, buffer + rptr, numbytes);
+	rptr += numbytes;
 	return numbytes;
 }
 
+int32_t Memfile::ReadString(char *dst, int32_t maxbytes) {
+	int32_t i = 0;
+	char v;
+	int32_t res;
+
+	while(true) {
+		// Max reached - need space for '\0' as we are reading a string...
+		if (i > (maxbytes-1)) {
+			break;
+		}
+		res = (kMFError)Read(&v,1);
+	//	printf("%c,%.2x\n", v,v);
+		if (res < 0) {
+			return res;
+		}
+		if ((v=='\0') || (v=='\n')) {
+			break;
+		}
+		dst[i++] = v;
+	}
+	dst[i]='\0';
+	return i;
+}
 
 //
 // Extend the internal buffer by blocksize number of bytes
@@ -125,7 +157,7 @@ kMFError Memfile::Extend() {
 		capacity = blocksize;
 		return kMFErr_NoError;
 	}
-	printf("Extend, current: %d bytes, adding: %d\n", capacity, blocksize);
+	//printf("Extend, current: %d bytes, adding: %d\n", capacity, blocksize);
 
 	buffer = (uint8_t *)realloc(buffer, capacity + blocksize);
 	if (buffer == NULL) {
@@ -133,6 +165,28 @@ kMFError Memfile::Extend() {
 	}
 	capacity += blocksize;
 	return kMFErr_NoError;
+}
+
+int32_t Memfile::ReadSeek(int offset) {
+	if (offset > length) {
+		offset = length;
+	}
+	if (offset < 0) {
+		offset = 0;
+	}
+	rptr = offset;
+	return rptr;
+}
+
+int32_t Memfile::WriteSeek(int offset) {
+	if (offset > length) {
+		offset = length;
+	}
+	if (offset < 0) {
+		offset = 0;
+	}
+	wptr = offset;
+	return wptr;
 }
 
 //

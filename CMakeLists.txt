@@ -48,6 +48,8 @@ target_include_directories(gnilkutil PUBLIC /usr/local/include)
 #set_property(TARGET gnilkutil PROPERTY CXX_STANDARD 11)
 set_property(TARGET gnilkutil PROPERTY CXX_STANDARD 11)
 
+add_definitions(-D__MEMFILE_STD__)
+
 #add_definitions(-D__GOA_GLFW__)
 #add_definitions(-D__GOA_MACOS__)
 

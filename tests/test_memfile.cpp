@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdint.h>
 #include "../memfile.h"
+#include <string>
 
 using namespace gnilk;
 
@@ -18,6 +19,12 @@ int test_memfile_opentryread(ITesting *t);
 int test_memfile_opentrywrite(ITesting *t);
 int test_memfile_writetypecheck(ITesting *t);
 int test_memfile_openrw(ITesting *t);
+int test_memfile_opout(ITesting *t);
+int test_memfile_readstring(ITesting *t);
+int test_memfile_seek(ITesting *t);
+#ifdef __MEMFILE_STD__
+int test_memfile_opout_stdstring(ITesting *t);
+#endif
 }
 
 int test_memfile_open(ITesting *t) {
@@ -117,6 +124,27 @@ int test_memfile_writetypecheck(ITesting *t) {
     return kTR_Pass;
 }
 
+int test_memfile_opout(ITesting *t) {
+	Memfile mf;
+	kMFError err;
+	if ((err = mf.Open()) != kMFErr_NoError) {
+		t->Error(__LINE__, __FILE__, "mf.Open, err: %d", err);
+		return kTR_Fail;
+	}
+	mf << "hello world " << "this is fun";
+	char buffer[128];
+	int32_t nRead = mf.Read(buffer, mf.Size());
+	buffer[nRead+1]='\0';
+	if (strcmp(buffer, "hello world this is fun")) {
+		t->Error(__LINE__, __FILE__, "write/read content mismatch");
+		return kTR_Fail;
+	}
+
+	mf.Close();
+	return kTR_Pass;
+}
+
+
 
 int test_memfile_opentrywrite(ITesting *t) {
 	Memfile mf;
@@ -131,7 +159,6 @@ int test_memfile_opentrywrite(ITesting *t) {
 	}
     return kTR_Pass;
 }
-
 
 // NOT EXPORTED!
 int test_memfile_generic(ITesting *t) {
@@ -166,6 +193,96 @@ int test_memfile_generic(ITesting *t) {
 	fwrite(ptrData, szData, 1, f);
 	fclose(f);
 	printf("Wrote data to file\n");
+	return kTR_Pass;
+}
+
+#ifdef __MEMFILE_STD__
+int test_memfile_opout_stdstring(ITesting *t) {
+	Memfile mf;
+	kMFError err;
+	if ((err = mf.Open()) != kMFErr_NoError) {
+		t->Error(__LINE__, __FILE__, "mf.Open, err: %d", err);
+		return kTR_Fail;
+	}
+	std::string content("hello world");
+	mf << content;
+
+	if (strncmp((const char *)mf.Buffer(), content.c_str(),content.length())) {
+		t->Error(__LINE__, __FILE__, "write/read content mismatch");
+		return kTR_Fail;
+	}
+	mf.Close();
+	return kTR_Pass;
+}
+#endif
+
+int test_memfile_readstring(ITesting *t) {
+	Memfile mf;
+	kMFError err;
+	if ((err = mf.Open()) != kMFErr_NoError) {
+		t->Error(__LINE__, __FILE__, "mf.Open, err: %d", err);
+		return kTR_Fail;
+	}
+	mf << "hello world";
+	mf << Memfile::eol;
+	mf << "not there";
+	mf << Memfile::eos;
+
+
+	int res;
+	char buffer[128];
+	res = (kMFError)mf.ReadString(buffer, 128);
+	if (res < 0) {
+		t->Error(__LINE__, __FILE__, "Memfile::ReadString failed, err=%d", err);
+		return kTR_Fail;
+	}
+	if (strcmp(buffer, "hello world")) {
+		t->Error(__LINE__, __FILE__, "content mismatch, got: %s (%s)", buffer, mf.Buffer());
+		return kTR_Fail;
+	}
+	res = (kMFError)mf.ReadString(buffer, 128);
+	if (strcmp(buffer, "not there")) {
+		t->Error(__LINE__, __FILE__, "content mismatch, got: %s (%s)", buffer, mf.Buffer());
+	}
+	return kTR_Pass;
+}
+
+int test_memfile_seek(ITesting *t) {
+	Memfile mf;
+	kMFError err;
+	if ((err = mf.Open()) != kMFErr_NoError) {
+		t->Error(__LINE__, __FILE__, "mf.Open, err: %d", err);
+		return kTR_Fail;
+	}
+	mf << "hello world" << Memfile::eol << "string two" << Memfile::eos;
+
+	int res;
+	char buffer[128];
+	res = (kMFError)mf.ReadString(buffer, 128);
+
+	// Reset to zero and check if we got 'hello world'
+	mf.ReadSeek(0);
+	res = (kMFError)mf.ReadString(buffer, 128);
+	if (res < 0) {
+		t->Error(__LINE__, __FILE__, "Memfile::ReadString failed, err=%d", err);
+		return kTR_Fail;
+	}
+	if (strcmp(buffer, "hello world")) {
+		t->Error(__LINE__, __FILE__, "content mismatch, got: %s (%s)", buffer, mf.Buffer());
+		return kTR_Fail;
+	}
+
+	// Reset to '6' and read again
+	mf.ReadSeek(6);
+	res = (kMFError)mf.ReadString(buffer, 128);
+	if (res < 0) {
+		t->Error(__LINE__, __FILE__, "Memfile::ReadString failed, err=%d", err);
+		return kTR_Fail;
+	}
+	if (strcmp(buffer, "world")) {
+		t->Error(__LINE__, __FILE__, "content mismatch, got: %s (%s)", buffer, mf.Buffer());
+		return kTR_Fail;
+	}
 	return kTR_Pass;
 }
 
