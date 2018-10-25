@@ -13,7 +13,8 @@ TODO: [ -:Not done, +:In progress, !:Completed]
 
 
 \History
-- 18.10.24, FKling, Implementation
+- 25.10.24, FKling, Operators (<<) for data types, Read/Write seeking, ReadString
+- 24.10.24, FKling, Implementation
 
 ---------------------------------------------------------------------------*/
 #include <stdio.h>

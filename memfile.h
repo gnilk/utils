@@ -36,7 +36,6 @@ public:
 	kMFError Open(kMFOpen flags = kMFOpen_RW);
 	kMFError Close();
 
-
     // old types
 	__inline int32_t Write(const float value) { return(Write(&value, sizeof(float))); }
 	__inline int32_t Write(const double value) { return(Write(&value, sizeof(double))); }
@@ -60,7 +59,6 @@ public:
 	uint32_t Capacity();
 	uint32_t Blocksize();
 
-
 #ifdef __MEMFILE_STD__
 	__inline int32_t Write(const std::string value) { return(Write(value.c_str(), value.length())); }
     inline Memfile& operator<<(const std::string &str) {
@@ -79,9 +77,6 @@ public:
     MEMFILE_OP_WRITE(uint32_t);
     #undef MEMFILE_OP_WRITE
 
-
-        
-
     inline gnilk::Memfile& operator<<(const char *cstr) {
         Write(cstr, strlen(cstr));
         return *this;
@@ -89,8 +84,6 @@ public:
 
 	bool CanRead() { return (mode & kMFOpen_R); }
 	bool CanWrite() { return (mode & kMFOpen_W); }
-
-
 
 protected:
 	kMFError Extend();
