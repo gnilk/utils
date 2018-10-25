@@ -295,7 +295,7 @@ void ExpSolver::RegisterUserFunctionCallback(PFNEVALUATEFUNC pFunc, void *pUser)
 //
 static bool IsNumeric(char c)
 {
-	static char *num="-0123456789%$x";
+	static const char *num="-0123456789%$x";
 	if (!strchr(num,c)) return false;
 	return true;
 }
@@ -431,6 +431,9 @@ BaseNode *ExpSolver::BuildFact()
 		case kTokenClass_Variable :
 			exp = BuildUserCall();
 			break;
+		default:
+			printf("[!] Error: Unknown token class: '%s'\n",token);
+			return NULL;
 		}
 	} else
 	{

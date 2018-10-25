@@ -35,6 +35,7 @@
  
  
  \History
+ - 18.10.2018, FKling, LoggerInstance in map, added 'Fatal' as level
  - 25.10.2010, FKling, Property handling and from-file-initialization
  - 25.10.2010, FKling, Simple rolling file appender
  - 21.10.2010, FKling, Changed messages classes to be ranges instead of fixed
@@ -88,9 +89,14 @@
 #define DEFAULT_LOGFILE_NAME ("logfile")
 #define DEFAULT_BUFFER_SIZE 1024
 
+#define DBGLEVEL_MASK_LEVEL(a) ((a) & 0xffff)
+#define DBGLEVEL_MASK_FLAGS(a) ((a>>16) & 0x7fff)
+#define DBGLEVEL_COMBINE(__level, __flags) (__level&0xffff | ((__flags & 0x7fff) << 16))
+	//dbgLevel = dbgLevel & 0xffff | ((flags & 0x7fff) << 16);
+
 using namespace std;
 
-namespace gnilk 
+namespace gnilk
 {
 	static int StrExplode(std::vector<std::string> *strList, char *mString, int chrSplit);
 	static char *StrTrim(char *s);
@@ -108,6 +114,20 @@ namespace gnilk
 		"LogFileSink", LogFileSink::CreateInstance,
 		NULL, NULL,
 	};
+
+
+bool LogBaseSink::WithinRange(int iDbgLevel) 
+{ 
+	int flags = DBGLEVEL_MASK_FLAGS(iDbgLevel);
+	if (flags & Logger::kFlags_PassThrough) {
+		return true;
+	}
+	if (flags & Logger::kFlags_BlockAll) {
+		return false;
+	}
+	int level = DBGLEVEL_MASK_LEVEL(iDbgLevel);
+	return (level>=properties.GetDebugLevel())?true:false; 
+}
 
 // --------------------------------------------------------------------------
 //
@@ -200,7 +220,7 @@ long LogFileSink::Size()
             return -1;
         length = ftell(fOut);
         if (fseek(fOut, offset, SEEK_SET) != 0)
-            -1;
+            return -1;
         return length;
 #endif
 
@@ -369,6 +389,7 @@ void Logger::SendToSinks(int dbgLevel, char *hdr, char *string)
 	ILogOutputSink *pSink = NULL;
 	ILoggerSinkList::iterator it;
 	it = sinks.begin();
+
 	while(it != sinks.end())
 	{
 		pSink = (ILogOutputSink *)*it;
@@ -470,33 +491,43 @@ void Logger::ReleaseBuffer(void *pBuf)
 	buffers.push(pBuf);
 }
 
+LoggerInstance *Logger::GetInstance(std::string name) {
+
+	if (loggers.find(name) == loggers.end()) {
+		// Have to create logger
+		ILogger *pLogger = (ILogger *)new Logger(name.c_str());
+		LoggerInstance *pInstance = new LoggerInstance(pLogger);
+		// TODO: Support for exclude list		
+		loggers.insert(std::pair<std::string, LoggerInstance *>(name, pInstance));
+
+		return pInstance;
+	}
+	return loggers[name];
+	// ILoggerList::iterator it;
+
+	// it = loggers.begin();
+	// while(it != loggers.end())
+	// {
+	// 	pInstance = (LoggerInstance *)*it;
+	// 	pLogger = pInstance->pLogger;
+	// 	if (!strcmp(pLogger->GetName(), name))
+	// 	{
+	// 		return pLogger;
+	// 	}
+	// 	it++;
+	// }
+
+}
+
 ILogger *Logger::GetLogger(const char *name)
 {
 	ILogger *pLogger = NULL;
-	LoggerInstance *pInstance;
-	ILoggerList::iterator it;
-	
 	Initialize();
-	
-	it = loggers.begin();
-	while(it != loggers.end())
-	{
-		pInstance = (LoggerInstance *)*it;
-		pLogger = pInstance->pLogger;
-		if (!strcmp(pLogger->GetName(), name))
-		{
-			return pLogger;
-		}
-		it++;
-	}
+
+	LoggerInstance *pInstance = GetInstance(std::string(name));
 	
 	// Have to create a new logger
-	pLogger = (ILogger *)new Logger(name);
-	pInstance = new LoggerInstance(pLogger);
-	// TODO: Support for exclude list
-	
-	loggers.push_back(pInstance);
-	return pLogger;
+	return pInstance->pLogger;
 	
 }
 void Logger::SetAllSinkDebugLevel(int iNewDebugLevel)
@@ -612,6 +643,7 @@ Logger::Logger(const char *sName)
 	this->sName = strdup(sName);
 	this->iIndentLevel = 0;
 	this->sIndent = (char *)malloc(MAX_INDENT+1);
+	this->logFlags = Logger::kFlags_None;
 	memset(this->sIndent,0,MAX_INDENT+1);
 	Logger::Initialize();
 }
@@ -621,15 +653,16 @@ Logger::~Logger()
 	// remove this from list of loggers
 	// TODO: better clean up, properties...
 }
-static char *lMessageClassNames[] = 
+static const char *lMessageClassNames[] = 
 {
 	"NONE",			// 0
 	"DEBUG",		// 1
 	"INFO",			// 2
 	"WARN",			// 3
 	"ERROR",		// 4
-	"CRITICAL"		// 5
-	"CUSTOM"		// 6
+	"CRITICAL",		// 5
+	"FATAL",		// 6
+	"CUSTOM"		// 7
 };
 const char *Logger::MessageClassNameFromInt(int mc) 
 {
@@ -653,11 +686,15 @@ const char *Logger::MessageClassNameFromInt(int mc)
 	{
 		return lMessageClassNames[4];
 	}
-	else if ((mc>=(int)Logger::kMCCritical))
+	else if ((mc>=(int)Logger::kMCCritical) && (mc<(int)Logger::kMCFatal))
 	{
 		return lMessageClassNames[5];
+	}
+	else if ((mc>=(int)Logger::kMCCritical))
+	{
+		return lMessageClassNames[6];
 	} 
-	return lMessageClassNames[6];
+	return lMessageClassNames[7];
 
 }
 
@@ -670,6 +707,7 @@ int Logger::MessageLevelFromName(const char *level)
 	if (!strcmp(level, "WARNING")) return kMCWarning;
 	if (!strcmp(level, "ERROR")) return kMCError;
 	if (!strcmp(level, "CRITICAL")) return kMCCritical;
+	if (!strcmp(level, "FATAL")) return kMCFatal;
 	return kMCNone;
 }
 
@@ -694,11 +732,15 @@ void Logger::WriteReportString(int mc, char *string)
 	tid = GetCurrentThreadId();	
 	snprintf(sHdr, MAX_INDENT + 64, "%s [%.8x] %8s %32s - %s", sTime, tid, sLevel, sName, sIndent);
 #else
-	void *tid = NULL;
-	tid = pthread_self();	
+	//void *tid = NULL;
+	pthread_t tid = pthread_self();	
 	snprintf(sHdr, MAX_INDENT + 64, "%s [%p] %8s %32s - %s", sTime, tid, sLevel, sName, sIndent);
 #endif
-	Logger::SendToSinks((int)mc,sHdr, string);
+
+	// gnilk, 2018-10-18, Combine with flags here - does not affect higher level API
+	int dbgLevel = DBGLEVEL_COMBINE(mc, logFlags);
+
+	Logger::SendToSinks((int)dbgLevel,sHdr, string);
 }
 
 
@@ -744,6 +786,13 @@ void Logger::WriteLine(const char *sFormat,...)
 	// Always write stuff without global filtering - let appenders figure it out..
 	WRITE_REPORT_STRING(kMCNone);
 }
+void Logger::Fatal(const char *sFormat,...)
+{
+	if (IsFatalEnabled()) {
+		WRITE_REPORT_STRING(kMCFatal);
+	}
+}
+
 void Logger::Critical(const char *sFormat,...)
 {
 	if (IsCriticalEnabled()) {
@@ -962,7 +1011,7 @@ int LogPropertyReader::GetAllStartingWith(std::vector<std::pair<std::string, std
 	return result->size();
 }
 
-char *LogPropertyReader::GetValue(const char *key, char *dst, int nMax, char *defValue)
+const char *LogPropertyReader::GetValue(const char *key, char *dst, int nMax, const char *defValue)
 {
 	if (properties.find(key) != properties.end())
 	{
@@ -1040,4 +1089,4 @@ static int StrExplode(std::vector<std::string> *strList, char *mString, int chrS
 	return count;
 } // StrExplode
 
-} // axcore
+} // namespace gnilk

@@ -117,6 +117,7 @@ const char *PropertyContainer::GetItem(char *secton, char *key)
 bool PropertyContainer::AddItem(char *key, char *value)
 {
 	items.insert(pair<string, string>(key, value));
+	return true;
 }
 
 bool PropertyContainer::HasItem(char *key)
@@ -194,6 +195,7 @@ Section::~Section()
 bool Section::AddItem(char *key, char *value)
 {
 	items.insert(pair<string, string>(key, value));
+	return true;
 }
 
 bool Section::HasItem(char *key)

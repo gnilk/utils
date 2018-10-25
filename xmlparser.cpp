@@ -25,6 +25,7 @@ TODO: [ -:Not done, +:In progress, !:Completed]
 
 ---------------------------------------------------------------------------*/
 #include "xmlparser.h"          
+#include <functional>
 
 using namespace gnilk::xml;
 

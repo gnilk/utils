@@ -25,6 +25,7 @@ Todo [-:undone,+:inprogress,!:done]:
 Changes: 
 
 -- Date -- | -- Name ------- | -- Did what...                              
+2018-10-19 | FKling          | LoggerInstance in map, added 'Fatal' as level
 2010-10-21 | FKling          | Redefined the message classes to be ranges
 2010-10-21 | FKling          | Added automatic indentation logging
 2010-10-19 | FKling          | Added sink management
@@ -60,6 +61,7 @@ namespace gnilk
 #endif
 
 #define MAX_INDENT 256
+
 	// Main public interface - this is the one you will normally use
 	class ILogger
 	{
@@ -68,10 +70,13 @@ namespace gnilk
 		virtual int GetIndent() = 0;
 		virtual int SetIndent(int nIndent) = 0;
 		virtual char *GetName() = 0;
+		virtual void Enable(int flag) = 0;
+		virtual void Disable(int flag) = 0;
 		
 		// functions
 		virtual void WriteLine(const char *sFormat,...) = 0;
 		virtual void WriteLine(int iDbgLevel, const char *sFormat,...) = 0;
+		virtual void Fatal(const char *sFormat,...) = 0;
 		virtual void Critical(const char *sFormat,...) = 0;
 		virtual void Error(const char *sFormat, ...) = 0;
 		virtual void Warning(const char *sFormat, ...) = 0;
@@ -93,7 +98,7 @@ namespace gnilk
 		void ReadFromFile(const char *filename);
 		void WriteToFile(const char *filename);
 
-		virtual char *GetValue(const char *key, char *dst, int nMax, char *defValue);
+		virtual const char *GetValue(const char *key, char *dst, int nMax, const char *defValue);
 		virtual void SetValue(const char *key, const char *value);
 
 		virtual int GetAllStartingWith(std::vector<std::pair<std::string, std::string> > *result, const char *filter);
@@ -168,7 +173,9 @@ namespace gnilk
 	protected:
 		char *name;
 		LogProperties properties;
-		__inline bool WithinRange(int iDbgLevel) { return (iDbgLevel>=properties.GetDebugLevel())?true:false; }
+		bool WithinRange(int iDbgLevel);
+
+//		__inline bool WithinRange(int iDbgLevel) { return (iDbgLevel>=properties.GetDebugLevel())?true:false; }
 	public:	
 		LogProperties *GetProperties() { return &properties; }
 	public:
@@ -238,7 +245,8 @@ namespace gnilk
 
 
 
-	typedef std::list<LoggerInstance *> ILoggerList;
+	//typedef std::list<LoggerInstance *> ILoggerList;
+	typedef std::map<std::string, LoggerInstance *> ILoggerList;
 	typedef std::list<ILogOutputSink *>ILoggerSinkList;
 
 	class Logger : public ILogger
@@ -252,8 +260,18 @@ namespace gnilk
 			kMCWarning = 300,
 			kMCError = 400,
 			kMCCritical = 500,
+			kMCFatal = 600,
 		} MessageClass;
-		
+
+		// Logger Flags - can be used to override sinklevel settings and other things
+		typedef enum {
+			kFlags_None = 0x0000,
+			// kFlags_PassThrough, messages printed regardless of sink-levels
+			kFlags_PassThrough = 0x0001,
+			// kFlags_BlockAll, all messages are blocked, Note: kFlags_PassThrough has higher priority	
+			kFlags_BlockAll = 0x0002,	
+		} kFlags;
+
 		typedef enum
 		{
 			kTFDefault,
@@ -265,6 +283,7 @@ namespace gnilk
 		char *sName;
 		char *sIndent;
 		int iIndentLevel;
+		int logFlags;
 		Logger(const char *sName);
 		void WriteReportString(int mc, char *string);
 		void GenerateIndentString();
@@ -279,11 +298,13 @@ namespace gnilk
 		static std::queue<void *> buffers;
 		static char *TimeString(int maxchar, char *dst);
 		static void SendToSinks(int dbgLevel, char *hdr, char *string);
-		static void Initialize();
-		static ILogOutputSink *CreateSink(const char *className);
 		static void RebuildSinksFromConfiguration();
+		static LoggerInstance *GetInstance(std::string name);
+
 	public:
 	
+		static ILogOutputSink *CreateSink(const char *className);
+		static void Initialize();
 		virtual ~Logger();
 		static ILogger *GetLogger(const char *name);
 		static void SetAllSinkDebugLevel(int iNewDebugLevel);
@@ -305,15 +326,20 @@ namespace gnilk
 		__inline bool IsWarningEnabled() { return (Logger::properties.IsLevelEnabled((int)kMCWarning)?true:false);}
 		__inline bool IsErrorEnabled() { return (Logger::properties.IsLevelEnabled((int)kMCError)?true:false);}
 		__inline bool IsCriticalEnabled() { return (Logger::properties.IsLevelEnabled((int)kMCCritical)?true:false);}
+		__inline bool IsFatalEnabled() { return (Logger::properties.IsLevelEnabled((int)kMCFatal)?true:false);}
 		
 		// properties
 		virtual int GetIndent() { return iIndentLevel; };
 		virtual int SetIndent(int nIndent) { iIndentLevel = nIndent; return iIndentLevel; };
 		virtual char *GetName() { return sName;};
+		virtual void Enable(int flag) { logFlags |= (flag & 0x7fff); };
+		virtual void Disable(int flag) { logFlags = logFlags & ((flag ^ 0x7fff) & 0x7fff); };
+
 		
 		// Functions
 		virtual void WriteLine(int iDbgLevel, const char *sFormat,...);
 		virtual void WriteLine(const char *sFormat,...);
+		virtual void Fatal(const char *sFormat,...);
 		virtual void Critical(const char *sFormat,...);
 		virtual void Error(const char *sFormat, ...);
 		virtual void Warning(const char *sFormat, ...);
