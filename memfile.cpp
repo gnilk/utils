@@ -31,7 +31,7 @@ using namespace gnilk;
 // windows '\n' = 0x0d, 0x0a
 // linux   '\n' = 
 const uint8_t Memfile::eol = (uint8_t)'\n'; // end-of-line since '\n' converts to an integer
-const uint8_t Memfile::eos = (uint8_t)'\n'; // end-of-string since '\0' converts to an integer
+const uint8_t Memfile::eos = (uint8_t)'\0'; // end-of-string since '\0' converts to an integer
 
 
 Memfile::Memfile() {
@@ -41,6 +41,7 @@ Memfile::Memfile() {
 	wptr = 0;
 	rptr = 0;
 	length = 0;
+	Open(kMFOpen_RW);
 }
 
 //

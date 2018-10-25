@@ -22,6 +22,7 @@ int test_memfile_openrw(ITesting *t);
 int test_memfile_opout(ITesting *t);
 int test_memfile_readstring(ITesting *t);
 int test_memfile_seek(ITesting *t);
+int test_memfile_jsonwrite(ITesting *t);
 #ifdef __MEMFILE_STD__
 int test_memfile_opout_stdstring(ITesting *t);
 #endif
@@ -286,3 +287,44 @@ int test_memfile_seek(ITesting *t) {
 	return kTR_Pass;
 }
 
+
+static const std::string quote("\"");
+static const std::string separator(":");
+static const std::string nextfield(",");
+class Marshal {
+public:
+    static std::string varToJSON(std::string name, uint8_t value, bool hasNext = true) {
+        gnilk::Memfile ss;
+
+        if (hasNext) {
+            ss << quote << name << quote << separator << std::to_string(value) << nextfield;
+        } else {
+            ss << quote << name << quote << separator << std::to_string(value);
+        }
+        ss  << gnilk::Memfile::eol << gnilk::Memfile::eos;
+		
+        return std::string((char *)ss.Buffer());
+    }
+};
+
+typedef struct {
+  uint8_t Major;
+  uint8_t Minor;
+} SensorVersionHeader;
+
+int test_memfile_jsonwrite(ITesting *t) {
+
+
+	
+
+    SensorVersionHeader version {.Major = 1, .Minor = 0};
+
+    std::string json = "";
+    json += "{\n";
+    json += Marshal::varToJSON("Major", version.Major); 
+    json += Marshal::varToJSON("Minor", version.Major, false); 
+    json += "}\n";
+
+	printf("%s\n", json.c_str());
+	return kTR_Pass;
+}
