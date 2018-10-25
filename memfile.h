@@ -23,6 +23,9 @@ typedef enum {
 
 #define MF_DEFAULT_BLOCKSZ 64
 
+//
+// This is a binary writer
+//
 class Memfile {
     // Note: Use these constants to avoid strange integer conversions when
     //       writing strings out

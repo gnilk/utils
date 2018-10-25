@@ -5,16 +5,22 @@ Version : $Revision: 1 $
 Orginal : 2018-10-24
 Descr   : Implements a membuffer file-like API
 
+Note: This is a binary writer, 'mf << (int)1' will write the hex '0x01' to the 
+      current write position. 
+
+
 Modified: $Date: $ by $Author: FKling $
 ---------------------------------------------------------------------------
 TODO: [ -:Not done, +:In progress, !:Completed]
 <pre>
+	- Split out string specific things to own some kind of string builder
 </pre>
 
 
 \History
-- 25.10.24, FKling, Operators (<<) for data types, Read/Write seeking, ReadString
-- 24.10.24, FKling, Implementation
+- 18.10.25, FKling, Open called in constructor - simplifies thing, you can still change mode in 'Open'
+- 18.10.25, FKling, Operators (<<) for data types, Read/Write seeking, ReadString
+- 18.10.24, FKling, Implementation
 
 ---------------------------------------------------------------------------*/
 #include <stdio.h>
@@ -30,6 +36,8 @@ using namespace gnilk;
 // macosx '\n' = 0x0a
 // windows '\n' = 0x0d, 0x0a
 // linux   '\n' = 
+
+// TODO: Remove from here
 const uint8_t Memfile::eol = (uint8_t)'\n'; // end-of-line since '\n' converts to an integer
 const uint8_t Memfile::eos = (uint8_t)'\0'; // end-of-string since '\0' converts to an integer
 
