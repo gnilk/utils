@@ -33,6 +33,7 @@ list(APPEND srcutils thread.cpp)
 list(APPEND srcutils tokenizer.cpp)
 list(APPEND srcutils urlparser.cpp)
 list(APPEND srcutils xmlparser.cpp)
+list(APPEND srcutils memfile.cpp)
 
 
 add_library(gnilkutil SHARED ${srcutils})
