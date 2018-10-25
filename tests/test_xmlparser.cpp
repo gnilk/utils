@@ -10,7 +10,7 @@ using namespace gnilk;
 using namespace std::placeholders;
 
 extern "C" {
-    int test_xml_parser(ITesting *t);
+    int test_xmlparser_general(ITesting *t);
 }
 
 // --  
@@ -41,7 +41,7 @@ void xmlTagEndHandler(ITag *tag, std::list<IAttribute *> &attributes) {
 	printf("%s - %s\n",tag->getName().c_str(), tag->getAttributeValue("name","").c_str());
 }
 
-int test_xml_parser(ITesting *t) {
+int test_xmlparser_general(ITesting *t) {
 
 	// printf("Testing XML Parser\n");
 	// printf("DEF\n%s\n",xmldef);
