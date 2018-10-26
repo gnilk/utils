@@ -68,6 +68,11 @@ public:
         Write(str);
         return *this;
     }
+	__inline std::string String() {
+		const uint8_t zero = 0;
+		Write(zero);	// make sure to terminate
+		return std::string((char *)buffer)
+;	}
 #endif
     #define MEMFILE_OP_WRITE(__T__) inline gnilk::Memfile& operator<<(const __T__ value) { Write(value); return *this; }
     MEMFILE_OP_WRITE(float);

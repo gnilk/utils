@@ -18,6 +18,7 @@ TODO: [ -:Not done, +:In progress, !:Completed]
 
 
 \History
+- 18.10.26, FKling, Added 'String' to return buffer as a zero terminated std::string
 - 18.10.25, FKling, Open called in constructor - simplifies thing, you can still change mode in 'Open'
 - 18.10.25, FKling, Operators (<<) for data types, Read/Write seeking, ReadString
 - 18.10.24, FKling, Implementation

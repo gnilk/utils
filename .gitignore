@@ -4,3 +4,5 @@
 *.sublime-workspace
 build/
 .vscode/settings.json
+solve
+utilstest

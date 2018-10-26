@@ -23,6 +23,7 @@ int test_memfile_opout(ITesting *t);
 int test_memfile_readstring(ITesting *t);
 int test_memfile_seek(ITesting *t);
 int test_memfile_jsonwrite(ITesting *t);
+int test_memfile_tostring(ITesting *t);
 #ifdef __MEMFILE_STD__
 int test_memfile_opout_stdstring(ITesting *t);
 #endif
@@ -286,6 +287,32 @@ int test_memfile_seek(ITesting *t) {
 	}
 	return kTR_Pass;
 }
+
+int test_memfile_tostring(ITesting *t) {
+	Memfile mf;
+	kMFError err;
+	if ((err = mf.Open()) != kMFErr_NoError) {
+		t->Error(__LINE__, __FILE__, "mf.Open, err: %d", err);
+		return kTR_Fail;
+	}
+
+	for (int i=0;i<10;i++) {
+		mf << "hello world" << Memfile::eol << "string two" << Memfile::eol;
+	}
+
+	std::string str = mf.String();
+	if (str.empty()) {
+		return kTR_Fail;
+	}
+
+	if (str.length() != mf.Size()-1) {
+		return kTR_Fail;
+	}
+	//printf("%d:%d\n%s\n", str.length(), mf.Size(), str.c_str());
+
+	return kTR_Pass;
+}
+
 
 
 static const std::string quote("\"");
