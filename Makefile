@@ -24,6 +24,7 @@ SRC_FILES = expsolver.cpp \
 	PropertyContainer.cpp \
 	logger.cpp \
 	xmlparser.cpp \
+	process.cpp \
 	utilstest.cpp
 
 

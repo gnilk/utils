@@ -18,7 +18,7 @@ TODO: [ -:Not done, +:In progress, !:Completed]
 
 
 \History
-- 18.10.26, FKling, Added 'String' to return buffer as a zero terminated std::string
+- 18.11.05, FKling, Added capability to create an object from an existing buffer
 - 18.10.25, FKling, Open called in constructor - simplifies thing, you can still change mode in 'Open'
 - 18.10.25, FKling, Operators (<<) for data types, Read/Write seeking, ReadString
 - 18.10.24, FKling, Implementation
@@ -52,6 +52,22 @@ Memfile::Memfile() {
 	length = 0;
 	Open(kMFOpen_RW);
 }
+#ifdef __MEMFILE_STD__
+Memfile::Memfile(const std::string &data) {
+	buffer = NULL;
+	blocksize = MF_DEFAULT_BLOCKSZ;
+	capacity = 0;
+	while(capacity < data.length()) {
+		Extend();
+	}
+	memcpy(buffer, data.c_str(), data.length());
+	length = data.length();
+
+	wptr = 0;
+	rptr = 0;
+	Open(kMFOpen_RW);
+}
+#endif
 
 //
 // Destroy the object
@@ -59,6 +75,7 @@ Memfile::Memfile() {
 Memfile::~Memfile() {
 	if (buffer != NULL) {
 		free(buffer);
+		buffer = NULL;
 	}
 }
 
@@ -73,15 +90,27 @@ kMFError Memfile::Open(kMFOpen flags /* = kMFOpen_RW */) {
 	mode = flags;
 
 	if (buffer == NULL) {
+		//printf("Memfile::Open, calling extend\n");
 		Extend();
 	}
 	return kMFErr_NoError;
 }
 
 //
-// Cose a memfile object
+// Close a memfile object
 //
 kMFError Memfile::Close() {
+	if (buffer != NULL) {
+		//printf("Memfile::Close, buffer=%p\n", buffer);
+		free(buffer);
+		buffer = NULL;
+	}
+	blocksize = MF_DEFAULT_BLOCKSZ;
+	capacity = 0;
+	wptr = 0;
+	rptr = 0;
+	length = 0;
+
 	return kMFErr_NoError;
 }
 
@@ -130,6 +159,7 @@ int32_t Memfile::Read(void *dst, int32_t numbytes) {
 	if ((numbytes + rptr) > length) {
 		numbytes = length - rptr;
 	}
+	//printf("Memfile::Read, numbytes %d (rptr: %d, length: %d)\n", numbytes, rptr, length);
 
 	memcpy(dst, buffer + rptr, numbytes);
 	rptr += numbytes;

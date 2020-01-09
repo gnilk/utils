@@ -34,6 +34,9 @@ public:
     static const uint8_t eos; // end-of-string since '\0' converts to an integer
 public:
 	Memfile();
+#ifdef __MEMFILE_STD__
+	Memfile(const std::string &data);
+#endif
 	virtual ~Memfile();
 
 	kMFError Open(kMFOpen flags = kMFOpen_RW);

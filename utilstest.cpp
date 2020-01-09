@@ -3,6 +3,8 @@
 #include "thread.h"
 #include "urlparser.h"
 #include "xmlparser.h"
+#include "process.h"
+#include "logger.h"
 #include <vector>
 #include <functional>
 
@@ -156,11 +158,33 @@ void testXMLParser() {
 				  std::bind(xmlTagEndHandler, std::placeholders::_1, std::placeholders::_2));
 }
 
+class MyProcCallbacks : public ProcessCallbackBase {
+public:
+	virtual void OnStdOutData(std::string _data) {
+		printf("%s\n",_data.c_str());
+	}
+};
+
+
+void testProcess() {
+	MyProcCallbacks cb;
+	gnilk::Process proc("ping");
+	proc.SetCallback(&cb);
+	proc.AddArgument("-c %d",5);
+	proc.AddArgument("www.google.com");
+	printf("Execute and Wait\n");
+	proc.ExecuteAndWait();
+}
+
 int main (int argc, char **argv) {
-	printf("hello world\n");
+    int logLevel = Logger::kMCDebug;
+	// Process is using "Logger"
+	Logger::Initialize();
+	Logger::AddSink(Logger::CreateSink("LogConsoleSink"), "console", 0, NULL);
+	Logger::SetAllSinkDebugLevel(logLevel);
 
 	//printf("%f\n", fmod(5.5,1.0));
-
+	testProcess();
 	testXMLParser();
 	testExpSolver();
 
