@@ -5,6 +5,9 @@
  Orginal : 2006-07-26, 15:50
  Descr   : Tiny Log4Net look-alike for C++ 
 
+
+	DEPRECATED - use the one from: https://github.com/gnilk/logger
+
  Layout can be changed in: Logger::WriteReportString
  
  Comparision in output is '>=' means, setting debug level filtering to 

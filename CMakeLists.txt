@@ -1,6 +1,8 @@
 #
 # CMAKE file for Gnilk Utility Library
 #
+# Logger and XML parser have own repo's - don't use this one
+#
 set(CMAKE_OSX_ARCHITECTURES x86_64)
 set(CMAKE_OSX_SYSROOT /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk)
 cmake_minimum_required(VERSION 2.8)
@@ -26,13 +28,11 @@ include_directories("${PROJECT_SOURCE_DIR}")
 list(APPEND srcutils curve.cpp)
 list(APPEND srcutils event.cpp)
 list(APPEND srcutils expsolver.cpp)
-list(APPEND srcutils logger.cpp)
 list(APPEND srcutils observer.cpp)
 list(APPEND srcutils PropertyContainer.cpp)
 list(APPEND srcutils thread.cpp)
 list(APPEND srcutils tokenizer.cpp)
 list(APPEND srcutils urlparser.cpp)
-list(APPEND srcutils xmlparser.cpp)
 list(APPEND srcutils memfile.cpp)
 
 # tests

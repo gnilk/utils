@@ -6,6 +6,9 @@ Version : $Revision: 1 $
 Orginal : 2012-05-10, 15:50
 Descr   : Implements a fairly speedy XML parser
 
+	DEPRECATED - use the one from: https://github.com/gnilk/xmlparser
+
+
 Modified: $Date: $ by $Author: Fkling $
 ---------------------------------------------------------------------------
 TODO: [ -:Not done, +:In progress, !:Completed]

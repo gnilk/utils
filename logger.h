@@ -4,6 +4,8 @@ Author  :   FKling
 Orginal :	2005-7-19, 11:39
 Descr   :	Logger, simplistic stuff, mimics Log4Net/Log4Java/Log4Delphi
 
+	DEPRECATED - use the one from: https://github.com/gnilk/logger
+
 No support for layout's, output is fixed
 
 Loglevel filtering can be set on:

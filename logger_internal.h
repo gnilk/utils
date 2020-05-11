@@ -7,6 +7,7 @@ Descr   :	Logger, simplistic stuff, mimics Log4Net/Log4Java/Log4Delphi
 --------------------------------------------------------------------------- 
 Todo [-:undone,+:inprogress,!:done]:
 
+	DEPRECATED - use the one from: https://github.com/gnilk/logger
  
 Changes: 
 
