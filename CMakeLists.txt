@@ -57,7 +57,7 @@ add_definitions(-D__MEMFILE_STD__)
 #
 # solver
 #
-add_executable(solver solver.cpp)
+add_executable(solver solver.cpp expsolver.cpp tokenizer.cpp)
 target_include_directories(solver PRIVATE .)
 
 add_executable(utilstest utilstest.cpp)
@@ -65,12 +65,15 @@ target_include_directories(utilstest PRIVATE .)
 set_property(TARGET utilstest PROPERTY CXX_STANDARD 11)
 
 set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} /usr/local/lib)
-find_library(IOKIT_FRAMEWORK IOKit)
-find_library(CORE_FRAMEWORK CoreFoundation)
 
-message(STATUS ${CMAKE_OSX_ARCHITECTURES})
+if (APPLE) 
+    message(STATUS ${CMAKE_OSX_ARCHITECTURES})
+    find_library(IOKIT_FRAMEWORK IOKit)
+    find_library(CORE_FRAMEWORK CoreFoundation)
+   
+    list(APPEND libdep ${COCOA_FRAMEWORK} ${IOKIT_FRAMEWORK})
+endif()
+target_link_libraries(gnilkutil ${libdep})
 
-target_link_libraries(gnilkutil ${COCOA_FRAMEWORK} ${IOKIT_FRAMEWORK} ${CORE_VIDEO_FRAMEWORK} ${OPENGL_FRAMEWORK} ${CORE_FRAMEWORK} ${GLFW})
-
-target_link_libraries(solver gnilkutil ${IOKIT_FRAMEWORK} ${CORE_FRAMEWORK})
-target_link_libraries(utilstest gnilkutil ${IOKIT_FRAMEWORK} ${CORE_FRAMEWORK})
+target_link_libraries(solver ${libdep})
+target_link_libraries(utilstest gnilkutil ${libdep})
